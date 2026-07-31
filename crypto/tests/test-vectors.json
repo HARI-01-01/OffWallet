@@ -1,0 +1,27 @@
+{
+  "testVectors": {
+    "ed25519": {
+      "seed": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "message": "Hello, Offline Payment System!",
+      "expectedPublicKey": "c3c3e0d0e0d0e0d0e0d0e0d0e0d0e0d0e0d0e0d0e0d0e0d0e0d0e0d0e0d0e0d0",
+      "expectedSignature": "a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0"
+    },
+    "aes_gcm": {
+      "key": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "plaintext": "{\"balance\":5000,\"counter\":5}",
+      "iv": "000102030405060708090a0b"
+    },
+    "sha256": {
+      "input": "OfflinePaymentChallenge",
+      "expectedDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "cbor": {
+      "input": {
+        "localId": "123e4567-e89b-12d3-a456-426614174000",
+        "amount": 1000,
+        "counter": 5,
+        "currency": "USD"
+      }
+    }
+  }
+}

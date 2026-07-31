@@ -1,0 +1,24 @@
+# Android
+*.iml
+.gradle/
+local.properties
+.idea/
+build/
+*.apk
+*.aar
+*.class
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+env/
+.pytest_cache/
+*.egg-info/
+
+# General
+.DS_Store
+*.swp
+*.tmp
+*.log
