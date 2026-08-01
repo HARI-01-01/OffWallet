@@ -105,7 +105,7 @@ class Database:
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                INSERT INTO offline_bucket (
+                INSERT OR REPLACE INTO offline_bucket (
                     wallet_id, balance, counter,
                     encrypted_balance, encrypted_counter,
                     server_signature, expires_at
@@ -126,6 +126,7 @@ class Database:
             encrypted_balance:Optional[bytes]=None,
             encrypted_counter:Optional[bytes]=None,
             server_signature:Optional[bytes]=None,
+            expires_at:Optional[int]=None,
             last_synced:Optional[int]=None,
             status:Optional[str]=None
         )->bool:
@@ -154,11 +155,14 @@ class Database:
             if status is not None:
                 updates.append("status = ?")
                 params.append(status)
+            if expires_at is not None:
+                updates.append("expires_at = ?")
+                params.append(expires_at)
                 
             if not updates:
                 return True
             
-            updates.append("updated_at= ?")
+            updates.append("updated_at = ?")
             params.append(int(time.time()))
             params.append(wallet_id)
             
@@ -214,7 +218,7 @@ class Database:
             conn.commit()
             return True
         
-    def get_pending_transaction(
+    def get_pending_transactions(
         self,
         status:Optional[str]=None,
         limit:int=100
@@ -273,7 +277,7 @@ class Database:
                 (local_id,)
             )
             conn.commit()
-            return cursor.rowcount >0
+            return cursor.rowcount > 0
         
     def get_queue_count(self,status:Optional[str]=None)->int:
         # get count of transaction in queue
@@ -287,4 +291,10 @@ class Database:
             else:
                 cursor.execute("SELECT COUNT(*) FROM pending_queue")
             return cursor.fetchone()[0]
-            
+    def clear_all_data(self) -> None:
+        """Clear all data from tables (for testing)."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM offline_bucket")
+            cursor.execute("DELETE FROM pending_queue")
+            conn.commit()

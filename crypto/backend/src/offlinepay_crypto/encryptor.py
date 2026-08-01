@@ -11,6 +11,7 @@ class Encryptor:
     def generate_key()->bytes:
         # generate a random AES-256 key
         return os.urandom(Encryptor.KEY_SIZE)
+    @staticmethod
     def generate_iv()->bytes:
         # generate a random 12 bytes initialization vector (IV)
         return os.urandom(Encryptor.IV_SIZE)

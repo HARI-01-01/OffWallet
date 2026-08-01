@@ -26,7 +26,7 @@ class BucketManager:
                       )->bool:
         # create a new offline bucket with pre-loaded funds.
         bucket_data = f"{wallet_id}:{initial_balance}:0".encode()
-        is_valid = Signer.verify(
+        is_valid = Signer.verify_with_bytes(
             server_public_key,
             bucket_data,
             server_signature
@@ -165,7 +165,8 @@ class BucketManager:
         new_balance = bucket['balance'] + amount
         bucket_data = f"{wallet_id}:{new_balance}:{bucket['counter']}".encode()
         is_vaild = Signer.verify_with_bytes(
-            server_public_key,bucket_data,
+            server_public_key,
+            bucket_data,
             server_signature
         )
         if not is_vaild:

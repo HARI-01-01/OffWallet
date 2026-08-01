@@ -16,8 +16,18 @@ class Signer:
     def verify(public_key:Ed25519PublicKey,message:bytes,signature:bytes)->bool:
         # verify a message signature
         try:
-            public_key.verify(signature,message)
-            return True
+            if isinstance(public_key, Ed25519PublicKey):
+                public_key.verify(signature, message)
+                return True
+            # Handle bytes
+            elif isinstance(public_key, bytes):
+                if len(public_key) != 32:
+                    return False
+                pub_key_obj = Ed25519PublicKey.from_public_bytes(public_key)
+                pub_key_obj.verify(signature, message)
+                return True
+            else:
+                return False
         except Exception:
             return False
     
@@ -33,6 +43,16 @@ class Signer:
     @staticmethod
     def verify_with_bytes(public_key_bytes:bytes,message:bytes,signature:bytes)->bool:
         # verify signature using raw publickey bytes
+        if not isinstance(public_key_bytes, bytes):
+        # If it's an Ed25519PublicKey object, extract raw bytes
+            if hasattr(public_key_bytes, 'public_bytes'):
+                from cryptography.hazmat.primitives import serialization
+                public_key_bytes = public_key_bytes.public_bytes(
+                    encoding=serialization.Encoding.Raw,
+                    format=serialization.PublicFormat.Raw
+                )
+            else:
+                raise TypeError("Public key must be bytes")
         if len(public_key_bytes)!=32:
             raise ValueError("Public key must be 32 bytes")
         if len(signature)!=64:
