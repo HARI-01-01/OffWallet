@@ -2,6 +2,7 @@
 #  use the cryptogrphy library for all cryptographic operation
 
 import os
+from pathlib import Path
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
     Ed25519PrivateKey,Ed25519PublicKey
 )
@@ -48,3 +49,18 @@ class KeyManager:
         if len(data)!=KeyManager.PUBLIC_KEY_SIZE:
             raise ValueError(f"public key must be {KeyManager.PUBLIC_KEY_SIZE} bytes")
         return Ed25519PublicKey.from_public_bytes(data)
+
+    @staticmethod
+    def get_master_server_key() -> tuple[Ed25519PrivateKey, Ed25519PublicKey]:
+        """Load the persistent master server key from file or generate a new one."""
+        key_file = Path("server_master.key")
+        if key_file.exists():
+            with open(key_file, "rb") as f:
+                private_bytes = f.read()
+                private_key = Ed25519PrivateKey.from_private_bytes(private_bytes)
+                return private_key, private_key.public_key()
+        else:
+            private_key, public_key = KeyManager.generate_key_pair()
+            with open(key_file, "wb") as f:
+                f.write(KeyManager.private_key_to_bytes(private_key))
+            return private_key, public_key

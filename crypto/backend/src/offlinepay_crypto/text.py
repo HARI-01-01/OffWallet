@@ -1,116 +1,103 @@
 #!/usr/bin/env python3
 """
-Test Double-Spend Detection Engine.
+Test User Management & Replenishment.
 """
 
 import os
 import sys
-import uuid
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from offlinepay_crypto.detection import DoubleSpendDetector
-from offlinepay_crypto.database import Database
+from offlinepay_crypto.user import UserManager
+from offlinepay_crypto.key_manager import KeyManager
 
 
-def setup_test_data():
-    """Create test bucket."""
-    db = Database()
-    db.clear_all_data()
-
-    db.create_bucket(
-        wallet_id="alice_123",
-        balance=5000,
-        counter=0,
-        encrypted_balance=b"",
-        encrypted_counter=b"",
-        server_signature=b"",
-        expires_at=9999999999,
-    )
-    return db
-
-
-def test_detection():
-    print("🔍 Testing Double-Spend Detection...")
+def test_user_manager():
+    print("👤 Testing User Management...")
     print("-" * 40)
 
     # 1. Setup
-    db = setup_test_data()
-    detector = DoubleSpendDetector(db)
-    print("✅ Detector initialized")
+    manager = UserManager()
+    print("✅ UserManager initialized")
 
-    # 2. Valid transaction
-    print("\n1. Testing valid transaction...")
-    valid, error, info = detector.validate(
-        payer_id="alice_123",
-        counter=1,
-        amount=1000,
-        local_id=str(uuid.uuid4()),
+    # 2. Generate server keys
+    server_priv, server_pub = KeyManager.generate_key_pair()
+    server_priv_bytes = KeyManager.private_key_to_bytes(server_priv)
+    server_pub_bytes = KeyManager.public_key_to_bytes(server_pub)
+
+    # 3. Register user
+    print("\n1. Registering user...")
+    success, error, user_data = manager.register_user(
+        email="alice@example.com",
+        phone="+1234567890",
+        password="secure_password",
+        initial_balance=5000,
+        server_private_key=server_priv_bytes,
+        server_public_key=server_pub_bytes,
     )
-    print(f"Valid: {valid}, Error: {error}")
-    assert valid
+    print(f"Success: {success}")
+    print(f"Wallet ID: {user_data.get('wallet_id')}")
+    assert success
 
-    # 3. Double-spend attempt
-    print("\n2. Testing double-spend (same counter)...")
-    valid, error, info = detector.validate(
-        payer_id="alice_123",
-        counter=1,
-        amount=1000,
-        local_id=str(uuid.uuid4()),
+    wallet_id = user_data['wallet_id']
+    aes_key = bytes.fromhex(user_data['aes_key'])
+
+    # 4. Check balance
+    print("\n2. Checking balance...")
+    balance = manager.get_balance(wallet_id, aes_key)
+    print(f"Balance: ${balance/100:.2f}")
+    assert balance == 5000
+
+    # 5. Generate 2FA code
+    print("\n3. Generating 2FA code...")
+    otp = manager.generate_2fa_code(wallet_id)
+    print(f"OTP: {otp}")
+    assert len(otp) == 6
+
+    # 6. Add funds
+    print("\n4. Adding funds ($20)...")
+    success, error, result = manager.add_funds(
+        wallet_id=wallet_id,
+        amount=2000,
+        aes_key=aes_key,
+        server_private_key=server_priv_bytes,
+        server_public_key=server_pub_bytes,
+        twofa_code=otp,
     )
-    print(f"Valid: {valid}, Error: {error}")
-    print(f"Fraud info: {info}")
-    assert not valid
-    assert info.get('fraud_type') == 'DOUBLE_SPEND'
+    print(f"Success: {success}")
+    print(f"Result: {result}")
+    assert success
+    assert result['new_balance'] == 7000
 
-    # 4. Replay attack (older counter)
-    print("\n3. Testing replay attack (counter 0)...")
-    valid, error, info = detector.validate(
-        payer_id="alice_123",
-        counter=0,
-        amount=1000,
-        local_id=str(uuid.uuid4()),
-    )
-    print(f"Valid: {valid}, Error: {error}")
-    assert not valid
-    assert info.get('fraud_type') == 'REPLAY_ATTACK'
+    # 7. Check updated balance
+    print("\n5. Checking updated balance...")
+    balance = manager.get_balance(wallet_id, aes_key)
+    print(f"Balance: ${balance/100:.2f}")
+    assert balance == 7000
 
-    # 5. Counter gap (skipped counters)
-    print("\n4. Testing counter gap (counter 5)...")
-    valid, error, info = detector.validate(
-        payer_id="alice_123",
-        counter=5,
-        amount=1000,
-        local_id=str(uuid.uuid4()),
-    )
-    print(f"Valid: {valid}, Error: {error}")
-    assert not valid
-    assert info.get('fraud_type') == 'COUNTER_GAP'
+    # 8. Test account freeze
+    print("\n6. Testing account freeze...")
+    success = manager.freeze_account(wallet_id)
+    print(f"Freeze success: {success}")
+    assert success
 
-    # 6. Insufficient balance
-    print("\n5. Testing insufficient balance ($100)...")
-    valid, error, info = detector.validate(
-        payer_id="alice_123",
-        counter=3,
-        amount=10000,
-        local_id=str(uuid.uuid4()),
-    )
-    print(f"Valid: {valid}, Error: {error}")
-    assert not valid
-    assert 'balance' in str(error)
+    status = manager.check_bucket_status(wallet_id)
+    print(f"Status after freeze: {status}")
+    assert status == 'FROZEN'
 
-    # 7. Test bucket freeze
-    print("\n6. Testing bucket freeze...")
-    bucket = db.get_bucket("alice_123")
-    print(f"Status before: {bucket.get('status')}")
-    detector._freeze_bucket("alice_123", "FRAUD_TEST")
-    bucket = db.get_bucket("alice_123")
-    print(f"Status after: {bucket.get('status')}")
-    assert bucket.get('status') == 'FROZEN'
+    # 9. Test account unfreeze
+    print("\n7. Testing account unfreeze...")
+    success = manager.unfreeze_account(wallet_id)
+    print(f"Unfreeze success: {success}")
+    assert success
+
+    status = manager.check_bucket_status(wallet_id)
+    print(f"Status after unfreeze: {status}")
+    assert status == 'ACTIVE'
 
     print("-" * 40)
-    print("🎉 All detection tests complete!")
+    print("🎉 All User Management tests complete!")
 
 
 if __name__ == "__main__":
-    test_detection()
+    test_user_manager()

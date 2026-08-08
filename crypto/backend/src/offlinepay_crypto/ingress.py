@@ -1,14 +1,38 @@
 # backend ingress gateway: receives offline transaction uploads
 
-import time
 import json
+import os
+import time
 from typing import Optional, Dict,Any,Tuple
 from dataclasses import dataclass
 
 from .database import Database
 from .serializer import Serializer
+from .rate_limiter import RateLimiter
 from .signer import Signer
 from .key_manager import KeyManager
+from .firebase_db import FirebaseDB
+
+def _decode_signature(value: str) -> bytes:
+    if not value:
+        return b""
+    try:
+        return bytes.fromhex(value)
+    except ValueError:
+        return b""
+
+
+def _ensure_bytes(value: Any) -> Optional[bytes]:
+    if value is None:
+        return None
+    if isinstance(value, bytes):
+        return value
+    if isinstance(value, memoryview):
+        return value.tobytes()
+    if isinstance(value, bytearray):
+        return bytes(value)
+    return value
+
 
 @dataclass
 class IngressRequest:
@@ -29,58 +53,90 @@ class IngressGateway:
     RATE_WINDOW = 60
     
     def __init__(self,db:Optional[Database]=None):
-        self.db = db or Database()
-        self._rate_cache = {}  # device_id
+        if db is None:
+            try:
+                self.db = FirebaseDB(skip_initialization=False)
+                self._is_firebase = True
+            except Exception:
+                self.db = Database()
+                self._is_firebase = False
+        self._rate_limiter = RateLimiter(os.getenv("REDIS_URL"))
+        self._rate_limit = int(os.getenv("RATE_LIMIT", str(self.RATE_LIMIT)))
+        self._rate_window = int(os.getenv("RATE_WINDOW", str(self.RATE_WINDOW)))
         
+    def authenticate_device(
+        self,
+        device_id: str,
+        signature: bytes,
+        payload: bytes,
+        timestamp: int,
+    ) -> Tuple[bool, Optional[str]]:
+        device = self.db.get_device(device_id)
+        if not device:
+            return False, "Device not registered"
+
+        if abs(int(time.time()) - int(timestamp)) > 300:
+            return False, "Timestamp too old"
+
+        public_key_bytes = _ensure_bytes(device.get("public_key"))
+        if not public_key_bytes:
+            return False, "Device not registered"
+
+        message = f"{timestamp}:{payload.hex()}".encode()
+        if not Signer.verify_with_bytes(public_key_bytes, message, signature):
+            return False, "Invalid signature"
+
+        self.db.touch_device(device_id)
+        return True, None
+
+    def verify_api_key(self, api_key: str) -> Tuple[bool, Optional[str]]:
+        key_data = self.db.get_api_key(api_key)
+        if not key_data:
+            return False, "Invalid API key"
+
+        if key_data.get("revoked"):
+            return False, "API key revoked"
+
+        expires_at = key_data.get("expires_at")
+        if expires_at is not None and expires_at < int(time.time()):
+            return False, "API key expired"
+
+        self.db.touch_api_key(api_key)
+        return True, None
+
+    def check_rate_limit(self, device_id: str) -> Tuple[bool, Optional[str]]:
+        allowed, _ = self._rate_limiter.check_rate_limit(
+            key=device_id,
+            limit=self._rate_limit,
+            window=self._rate_window,
+        )
+        if not allowed:
+            return False, "Rate limit exceeded"
+        return True, None
+
     def authenticate(
         self,
         api_key:str,
         device_id:str,
         device_signature:bytes,
-        payload:bytes
+        payload:bytes,
+        timestamp:int
     )->Tuple[bool,Optional[str]]:
-        if not self._validate_api_key(api_key):
-            return False,"Invalid API Key"
-        
-        pub_key = self._get_device_public_key(device_id)
-        if not pub_key:
-            return False, "Device not registered"
-        
-        if not Signer.verify_with_bytes(pub_key,payload,device_signature):
-            return False,"Invalid device signature"
-        
-        return True,None
-    
-    def _validate_api_key(self,api_key:str)->bool:
-        # in production :check against database
-        
-        return api_key.startswith("sk_")
+        valid, error = self.verify_api_key(api_key)
+        if not valid:
+            return False, error
+
+        valid, error = self.authenticate_device(device_id, device_signature, payload, timestamp)
+        if not valid:
+            return False, error
+
+        return True, None
         
     def _get_device_public_key(self,device_id:str)->Optional[bytes]:
-        # in production : query database
-        if hasattr(self, '_device_public_keys'):
-            return self._wallet_public_keys.get(device_id)
-        import os
-        return os.urandom(32)
-    
-    def rate_limit(self,device_id:str)->Tuple[bool,Optional[str]]:
-    # check rate limit for device
-        now = int(time.time())
-        if device_id not in self._rate_cache:
-            self._rate_cache[device_id]=(now,1)
-            return True,None
-            
-        last_time,count = self._rate_cache[device_id]
-        if now - last_time>self.RATE_WINDOW:
-            self._rate_cache[device_id] = (now,1)
-            return True,None
-            
-        if count>=self.RATE_LIMIT:
-            return False,"Rate limit exceeded"
-        
-        self._rate_cache[device_id] = (last_time,count+1)
-        
-        return True,None
+        device = self.db.get_device(device_id)
+        if not device:
+            return None
+        return _ensure_bytes(device.get("public_key"))
         
     def validate_payload(self,data:Dict[str,Any])->Tuple[bool,Optional[str]]:
         # validate incoming payload structure
@@ -120,14 +176,14 @@ class IngressGateway:
         if not Signer.verify_with_bytes(
             payer_public_key,
             msg,
-            bytes.fromhex(data['payer_signature'])
+            _decode_signature(data.get('payer_signature', ''))
         ):
             return False,"Invalid payer signature"
         
         if not Signer.verify_with_bytes(
             payee_public_key,
             msg,
-            bytes.fromhex(data['payee_signature'])
+            _decode_signature(data.get('payee_signature', ''))
         ):
             return False,"Invalid payee signature"
         
@@ -162,21 +218,26 @@ class IngressGateway:
         
         api_key = data.get('api_key','')        
         device_id = data.get('device_id','')      
-        device_signature = bytes.fromhex(data.get('device_signature',''))
+        device_signature = _decode_signature(data.get('device_signature', ''))
+        payload_for_signature = dict(data)
+        payload_for_signature.pop('device_signature', None)
+        signed_payload = json.dumps(payload_for_signature, sort_keys=True, separators=(',', ':')).encode('utf-8')
+        timestamp = int(data.get('timestamp', 0))
         
         valid,error =self.authenticate(
             api_key,
             device_id,
             device_signature,
-            raw_data
+            signed_payload,
+            timestamp
         )
         
         if not valid: 
-            return False,{'error':error}
+            return False,{'error':error,'reason':'auth'}
         
-        valid,error = self.rate_limit(device_id)
+        valid,error = self.check_rate_limit(device_id)
         if not valid:
-            return False,{'error':error}
+            return False,{'error':error,'reason':'rate_limit'}
         
         existing = self._get_transaction(data['local_id'])
         if existing:
@@ -192,8 +253,8 @@ class IngressGateway:
             return False, {'error':"Invalid payer or payee"}
         
         vaild,error = self.verify_transaction_signatures(data,payer_pub,payee_pub)
-        if not valid:
-            return False,{'error',error}
+        if not vaild:
+            return False,{"error": error}
         
         valid,error = self.check_double_spend(data['payer_id'],data['counter'])
         if not valid:
@@ -201,7 +262,7 @@ class IngressGateway:
         
         self._store_transaction(data)
         # in production :emit to message queue (rabbitMQ/Kafka)
-        self._forward_to_detection(data)
+        self.forward_to_detection(data)
         
         return True, {
             "status":"PENDING",
@@ -209,20 +270,37 @@ class IngressGateway:
             "message":"Transaction received, processing..."
         }
         
-    def _get_transaction(self,local_id:str)->Optional[Dict]:
-        # in production : query database
+    def _get_public_key(self, wallet_id: str) -> Optional[bytes]:
+        """Get public key for a wallet."""
+        if self._is_firebase:
+            user = self.db.get_user(wallet_id)
+        else:
+            user = self.db.get_user(wallet_id)
         
+        if user and user.get('public_key'):
+            pub_key = user.get('public_key')
+            if isinstance(pub_key, str):
+                return bytes.fromhex(pub_key)
+            return pub_key
         return None
     def _get_public_key(self,wallet_id:str)->Optional[bytes]:
-        # in production : query from database
-        if hasattr(self, '_wallet_public_keys'):
-            return self._wallet_public_keys.get(wallet_id)
-        import os
-        return os.urandom(32)
+        user = self.db.get_user(wallet_id)
+        if user and user.get('public_key'):
+            return user['public_key']
+        return None
     
     def _store_transaction(self,data:Dict[str,Any])->None:
-        # in production :insert into pending_settlements
-        pass
+        self.db.create_pending_transaction(
+            local_id=data['local_id'],
+            amount=data['amount'],
+            payer_id=data['payer_id'],
+            payee_id=data['payee_id'],
+            counter=data['counter'],
+            timestamp=data['timestamp'],
+            payer_signature=_decode_signature(data.get('payer_signature', '')),
+            payee_signature=_decode_signature(data.get('payee_signature', '')),
+            status='PENDING',
+        )
     
     def forward_to_detection(self,data:Dict[str,Any])->None:
         # in production: publish to message queue

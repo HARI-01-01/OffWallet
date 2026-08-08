@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline Payment Dashboard</title>
+    <style>
+        :root {
+            --bg: #0b1020;
+            --panel: rgba(15, 23, 42, 0.84);
+            --panel-2: #111827;
+            --text: #e5e7eb;
+            --muted: #94a3b8;
+            --accent: #60a5fa;
+            --success: #34d399;
+            --warning: #fbbf24;
+            --danger: #f87171;
+            --border: rgba(148, 163, 184, 0.16);
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at top left, rgba(96, 165, 250, 0.28), transparent 30%),
+                radial-gradient(circle at 80% 20%, rgba(52, 211, 153, 0.16), transparent 24%),
+                linear-gradient(180deg, #030712, #0b1020 40%, #111827 100%);
+            min-height: 100vh;
+        }
+        .wrap { max-width: 1440px; margin: 0 auto; padding: 28px; }
+        .hero {
+            display: flex; justify-content: space-between; align-items: center; gap: 20px;
+            padding: 24px; margin-bottom: 20px; border: 1px solid var(--border); border-radius: 24px;
+            background: linear-gradient(180deg, rgba(17,24,39,.9), rgba(15,23,42,.72));
+            box-shadow: 0 18px 50px rgba(0,0,0,.35);
+        }
+        h1 { margin: 0; font-size: 30px; letter-spacing: -0.03em; }
+        .subtitle { color: var(--muted); margin-top: 6px; }
+        .btn {
+            border: 0; border-radius: 12px; padding: 12px 18px; cursor: pointer; font-weight: 700;
+            background: linear-gradient(135deg, #3b82f6, #2563eb); color: white;
+        }
+        .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
+        .card {
+            grid-column: span 3; padding: 18px; border-radius: 20px; border: 1px solid var(--border);
+            background: var(--panel); backdrop-filter: blur(12px);
+        }
+        .card.wide { grid-column: span 6; }
+        .card.full { grid-column: 1 / -1; }
+        .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .12em; }
+        .value { font-size: 34px; font-weight: 800; margin-top: 10px; }
+        .sub { color: var(--muted); margin-top: 8px; }
+        .status { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; font-weight: 700; }
+        .status.ok { background: rgba(52,211,153,.12); color: var(--success); }
+        .status.warn { background: rgba(251,191,36,.12); color: var(--warning); }
+        .status.err { background: rgba(248,113,113,.12); color: var(--danger); }
+        table { width: 100%; border-collapse: collapse; overflow: hidden; }
+        th, td { text-align: left; padding: 12px 10px; border-bottom: 1px solid var(--border); font-size: 14px; }
+        th { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+        .pill { padding: 5px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+        .pill.success { background: rgba(52,211,153,.12); color: var(--success); }
+        .pill.warn { background: rgba(251,191,36,.12); color: var(--warning); }
+        .pill.danger { background: rgba(248,113,113,.12); color: var(--danger); }
+        .muted { color: var(--muted); }
+        .panel { padding: 18px; border-radius: 20px; border: 1px solid var(--border); background: var(--panel); }
+        @media (max-width: 960px) {
+            .card, .card.wide { grid-column: 1 / -1; }
+            .hero { flex-direction: column; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="hero">
+            <div>
+                <h1>Offline Payment Monitoring</h1>
+                <div class="subtitle">Analytics API, system health, activity stream, and alert visibility.</div>
+            </div>
+            <button class="btn" onclick="loadDashboard()">Refresh</button>
+        </div>
+
+        <div class="grid" id="cards"></div>
+
+        <div style="height: 16px"></div>
+
+        <div class="grid">
+            <div class="card wide">
+                <div class="label">System Health</div>
+                <div id="healthBox" style="margin-top:12px"></div>
+            </div>
+            <div class="card wide">
+                <div class="label">Recent Activity</div>
+                <div class="panel" style="margin-top:12px; overflow:auto; max-height: 420px;" id="activityBox"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function fmtMoney(amount) {
+            return `$${(amount / 100).toFixed(2)}`;
+        }
+
+        function fmtUptime(seconds) {
+            const days = Math.floor(seconds / 86400);
+            const hours = Math.floor((seconds % 86400) / 3600);
+            const mins = Math.floor((seconds % 3600) / 60);
+            if (days > 0) return `${days}d ${hours}h`;
+            return `${hours}h ${mins}m`;
+        }
+
+        function healthClass(status) {
+            if (status === 'healthy') return 'ok';
+            if (status === 'warning') return 'warn';
+            return 'err';
+        }
+
+        function statusClass(status) {
+            if (status === 'PROCESSED' || status === 'SETTLED') return 'success';
+            if (status === 'QUEUED') return 'warn';
+            return 'danger';
+        }
+
+        async function loadDashboard() {
+            const res = await fetch('/api/v1/admin/dashboard');
+            const json = await res.json();
+            if (json.status !== 'success') return;
+            render(json.data);
+        }
+
+        function render(data) {
+            const cards = [
+                ['Total Users', data.users.total_users, `Active users: ${data.users.active_users}`],
+                ['Total Volume', fmtMoney(data.transactions.total_volume), `Today: ${fmtMoney(data.transactions.volume_today)}`],
+                ['Transactions', data.transactions.total_transactions, `Today: ${data.transactions.transactions_today}`],
+                ['Pending', data.transactions.pending_count, `Failed: ${data.transactions.failed_count}`],
+                ['Buckets', data.buckets.total_buckets, `Frozen: ${data.buckets.frozen_count}`],
+                ['Balance', fmtMoney(data.buckets.total_balance), `Avg: ${fmtMoney(data.buckets.average_balance)}`],
+                ['CPU', `${data.health.cpu_usage}%`, `Memory: ${data.health.memory_usage}%`],
+                ['Queue', data.health.queue_size, `Redis: ${data.health.redis_connected ? 'connected' : 'offline'}`],
+            ];
+
+            document.getElementById('cards').innerHTML = cards.map(([label, value, sub]) => `
+                <div class="card">
+                    <div class="label">${label}</div>
+                    <div class="value">${value}</div>
+                    <div class="sub">${sub}</div>
+                </div>
+            `).join('');
+
+            document.getElementById('healthBox').innerHTML = `
+                <div class="status ${healthClass(data.health.status)}">${data.health.status.toUpperCase()}</div>
+                <div class="muted" style="margin-top: 14px; line-height: 1.8;">
+                    Uptime: ${fmtUptime(data.health.uptime)}<br>
+                    Database: ${data.health.database_connected ? 'Connected' : 'Unavailable'}<br>
+                    Redis: ${data.health.redis_connected ? 'Connected' : 'Unavailable'}<br>
+                    Queue size: ${data.health.queue_size}
+                </div>
+            `;
+
+            const activityRows = (data.activity || []).map(item => `
+                <tr>
+                    <td>${new Date(item.timestamp).toLocaleString()}</td>
+                    <td>${item.event_type}</td>
+                    <td>${item.user_id || '-'}</td>
+                    <td>${fmtMoney(item.details.amount || 0)}</td>
+                    <td><span class="pill ${statusClass(item.details.status)}">${item.details.status}</span></td>
+                </tr>
+            `).join('');
+
+            document.getElementById('activityBox').innerHTML = `
+                <table>
+                    <thead>
+                        <tr><th>Time</th><th>Event</th><th>User</th><th>Amount</th><th>Status</th></tr>
+                    </thead>
+                    <tbody>${activityRows || '<tr><td colspan="5" class="muted">No recent activity</td></tr>'}</tbody>
+                </table>
+            `;
+        }
+
+        loadDashboard();
+        setInterval(loadDashboard, 30000);
+    </script>
+</body>
+</html>

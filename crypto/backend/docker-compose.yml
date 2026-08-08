@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  backend:
+    build: .
+    container_name: offline-payment-backend
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: sqlite:///./offline_wallet.db
+      SECRET_KEY: ${SECRET_KEY:-change-me}
+      API_KEY: ${API_KEY:-sk_test_12345}
+      PORT: 8000
+      HOST: 0.0.0.0
+      REDIS_URL: redis://redis:6379
+      RATE_LIMIT: 100
+      RATE_WINDOW: 60
+      # Add this for Firebase
+      GOOGLE_APPLICATION_CREDENTIALS: /app/firebase-adminsdk.json
+    volumes:
+      - ./offline_wallet.db:/app/offline_wallet.db
+      - ./firebase-adminsdk.json:/app/firebase-adminsdk.json  # Mount Firebase credentials
+    restart: unless-stopped
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:alpine
+    container_name: offline-payment-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
