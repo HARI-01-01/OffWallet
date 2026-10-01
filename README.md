@@ -1,6 +1,6 @@
 # 🛡️ Shadow Protocol v1 (OffWallet)
 
-> **Non-Custodial, Hardware-Anchored Offline Payment System for Android**
+> **Zero-Trust, Non-Custodial, Hardware-Anchored Offline Payment Infrastructure for Android**
 
 [![Kotlin](https://img.shields.io/badge/Kotlin-1.9.0-purple.svg)](https://kotlinlang.org)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org)
@@ -10,11 +10,59 @@
 
 ---
 
+## 🏆 Project Information
+
+- **Hackathon**: HACK NEXUS 2026
+- **Problem Statement ID**: PS-07 (Offline Micro-Payment Infrastructure)
+- **Theme**: FinTech & Security
+- **Team Name**: BobTheBuilder
+- **Institution**: National Forensic Sciences University (NFSU)
+- **Project Name**: ShadowPay / Shadow Protocol
+- **Presentation**: [Download HackNeux2026_ShadowPay.pptx](docs/presentation/HackNeux2026_ShadowPay.pptx)
+
+---
+
 ## 📌 Executive Summary
 
 **OffWallet** implements **Shadow Protocol v1**, a state-of-the-art offline peer-to-peer (P2P) payment architecture that solves the fundamental challenge of digital transactions without internet access: **preventing double-spending and ledger divergence offline without relying on a central authority during the transaction.**
 
 By combining **Android TEE/StrongBox hardware security**, **Unified Double-Linked Blocks (UDLB)**, and a **5-step BLE/QR Handshake (M1–M5)**, OffWallet enables instant, tamper-proof offline transfers with mathematical finality and non-custodial recovery.
+
+---
+
+## 🎬 Project Demonstration Videos
+
+<details>
+<summary><b>📹 Click to view embedded video demos from the presentation</b></summary>
+
+### 1. Offline P2P Payment Handshake & Audit
+![Demo Video 1](docs/media/VAHTpSXc5Oo.mp4)
+
+### 2. BLE & QR Discovery Flow
+![Demo Video 2](docs/media/VAHTpuL_1RI.mp4)
+
+### 3. Mutual Visual SAS (6-Digit Code) Verification
+![Demo Video 3](docs/media/VAHTps3B18E.mp4)
+
+### 4. Background Sync & Dual-Head Recovery
+![Demo Video 4](docs/media/VAHTpo_XVE0.mp4)
+
+</details>
+
+---
+
+## 📊 Comparison with Existing Systems
+
+| Parameter | Our System (Shadow Protocol) | UPI Lite X (NPCI) | RBI Offline Framework | ElasticPay (IIT Indore) | Crunchfish Digital Cash |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Payment Type** | **P2P (Person-to-Person) + P2M** | P2P + P2M (NFC) | P2M (Cards/Wallets) | P2P | P2P + P2M |
+| **Hardware Security** | **StrongBox/TEE (Keys never leave hardware)** | None (Software wallet) | None specified | TPM + TEE + SE | TEE-based wallets |
+| **Offline Verification** | **Atomic Co-Signing (Both sign same block)** | Deferred via PoS | Deferred settlement | Immediate settlement | Deferred (IOUs) |
+| **Double-Spend Protection** | **Hardware Monotonic Counter + UDLB** | Server reconciliation | Server reconciliation | Hardware-enforced | IOU reconciliation |
+| **Fraud Detection** | **Real-time Local Audit (`walkBack`)** | Post-sync detection | Post-sync detection | Hardware-enforced | Post-sync detection |
+| **Max Offline Limit** | **Configurable (Default ₹2,000)** | ₹2,000 balance | ₹500/txn, ₹2,000 total | Not specified | Not specified |
+| **Infrastructure Needed** | **None (Two Android phones only)** | NFC phones + POS | Cards / POS | TPM / SE hardware | Payment Network |
+| **Communication Channel** | **NFC Bootstrap + BLE Session Channel** | NFC only | Proximity mode | NFC + Hardware | Multiple |
 
 ---
 
@@ -95,6 +143,7 @@ Hackathon_Nexus/
 │
 ├── crypto/
 │   └── backend/                     # Python Async Backend
+│       ├── README.md                # Backend API Reference & Schema
 │       ├── src/
 │       │   ├── main.py              # FastAPI Application & Endpoints
 │       │   ├── reset_system.py      # Cleans Database for Demonstrations
@@ -105,7 +154,9 @@ Hackathon_Nexus/
 │       │       └── canon.py         # Canonical Encoder
 │       └── venv/
 │
-├── docs/                            # Architecture Diagrams & Specifications
+├── docs/                            # Architecture Diagrams, Presentation & Media
+│   ├── media/                       # Video Demos & Presentation Media
+│   └── presentation/                # HackNeux2026_ShadowPay.pptx
 └── README.md
 ```
 
@@ -177,6 +228,9 @@ ENV=development python3 src/test_stress_scenarios.py
 
 ---
 
-## 📜 License & Acknowledgments
+## 📜 References & Acknowledgments
 
-Developed for the Hackathon Demonstration. Built using modern open standards including **Ed25519**, **X25519**, **ChaCha20-Poly1305**, **Shamir's Secret Sharing**, and **Google Play Integrity**.
+- **RBI Circular**: Framework for Facilitating Small Value Digital Payments in Offline Mode.
+- **UPI Lite X (NPCI)**: Offline Digital Payments Architecture.
+- **Open Cryptographic Standards**: Ed25519, X25519, ChaCha20-Poly1305, Shamir's Secret Sharing (2-of-3), and Google Play Integrity.
+- **Team**: BobTheBuilder | National Forensic Sciences University (NFSU).
