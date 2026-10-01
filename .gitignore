@@ -13,8 +13,14 @@ graphify-out/
 *.db
 
 # Keys and Secrets
+.env
+.env.*
+!.env.example
 *.key
 firebase-adminsdk.json
+**/firebase-adminsdk.json
+!firebase-adminsdk.json.example
+!**/firebase-adminsdk.json.example
 
 # Python
 __pycache__/

@@ -1,0 +1,19 @@
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+firebase-adminsdk.json
+**/firebase-adminsdk.json
+
+# Byte-compiled / Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Database
+*.db
+*.sqlite3
+
+# Logs
+*.log
