@@ -61,7 +61,7 @@ class TestQueueManager:
     def test_mark_as_failed(self, queue_manager, test_transaction):
         """Test marking as failed."""
         local_id = queue_manager.add_transaction(**test_transaction)
-        result = queue_manager.marks_as_failed(local_id)
+        result = queue_manager.mark_as_failed(local_id)
         assert result is True
 
         tx = queue_manager.get_transaction(local_id)
@@ -70,7 +70,7 @@ class TestQueueManager:
     def test_increment_retry(self, queue_manager, test_transaction):
         """Test incrementing retry count."""
         local_id = queue_manager.add_transaction(**test_transaction)
-        queue_manager.marks_as_failed(local_id)
+        queue_manager.mark_as_failed(local_id)
         result = queue_manager.increment_retry(local_id)
         assert result is True
 
@@ -80,7 +80,7 @@ class TestQueueManager:
     def test_should_retry(self, queue_manager, test_transaction):
         """Test retry eligibility."""
         local_id = queue_manager.add_transaction(**test_transaction)
-        queue_manager.marks_as_failed(local_id)
+        queue_manager.mark_as_failed(local_id)
 
         should, reason = queue_manager.should_retry(local_id)
         assert should is True
@@ -88,7 +88,7 @@ class TestQueueManager:
     def test_should_not_retry_after_max(self, queue_manager, test_transaction):
         """Test retry after max retries."""
         local_id = queue_manager.add_transaction(**test_transaction)
-        queue_manager.marks_as_failed(local_id)
+        queue_manager.mark_as_failed(local_id)
 
         # Increment retry 3 times
         for _ in range(3):

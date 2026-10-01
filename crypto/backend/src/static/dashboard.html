@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Offline Payment Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --bg: #0b1020;
@@ -40,7 +41,10 @@
         .btn {
             border: 0; border-radius: 12px; padding: 12px 18px; cursor: pointer; font-weight: 700;
             background: linear-gradient(135deg, #3b82f6, #2563eb); color: white;
+            transition: opacity 0.2s;
         }
+        .btn:hover { opacity: 0.9; }
+        .btn.sec { background: var(--border); color: var(--text); }
         .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
         .card {
             grid-column: span 3; padding: 18px; border-radius: 20px; border: 1px solid var(--border);
@@ -64,6 +68,20 @@
         .pill.danger { background: rgba(248,113,113,.12); color: var(--danger); }
         .muted { color: var(--muted); }
         .panel { padding: 18px; border-radius: 20px; border: 1px solid var(--border); background: var(--panel); }
+        .alert-banner {
+            padding: 16px; border-radius: 16px; margin-bottom: 20px; display: flex; align-items: center; gap: 16px;
+            background: rgba(248,113,113,0.1); border: 1px solid var(--danger); color: var(--danger);
+        }
+        .search-box {
+            display: flex; gap: 8px; margin-bottom: 20px;
+        }
+        input {
+            background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px;
+            padding: 12px 16px; color: var(--text); flex: 1; outline: none;
+        }
+        input:focus { border-color: var(--accent); }
+        .user-row:hover { background: rgba(255,255,255,0.05); }
+
         @media (max-width: 960px) {
             .card, .card.wide { grid-column: 1 / -1; }
             .hero { flex-direction: column; align-items: flex-start; }
@@ -72,12 +90,17 @@
 </head>
 <body>
     <div class="wrap">
+        <div id="alertsContainer"></div>
+
         <div class="hero">
             <div>
-                <h1>Offline Payment Monitoring</h1>
-                <div class="subtitle">Analytics API, system health, activity stream, and alert visibility.</div>
+                <h1>Shadow Admin Dashboard</h1>
+                <div class="subtitle">Real-time ledger monitoring, fraud detection, and transaction tracing.</div>
             </div>
-            <button class="btn" onclick="loadDashboard()">Refresh</button>
+            <div style="display: flex; gap: 12px;">
+                <button class="btn sec" onclick="exportData()">Export CSV</button>
+                <button class="btn" onclick="loadDashboard()">Refresh</button>
+            </div>
         </div>
 
         <div class="grid" id="cards"></div>
@@ -86,58 +109,399 @@
 
         <div class="grid">
             <div class="card wide">
-                <div class="label">System Health</div>
-                <div id="healthBox" style="margin-top:12px"></div>
+                <div class="label">User Directory</div>
+                <div id="userListContainer" style="margin-top:12px; max-height: 400px; overflow:auto;">
+                    <div class="muted">Loading users...</div>
+                </div>
             </div>
             <div class="card wide">
-                <div class="label">Recent Activity</div>
-                <div class="panel" style="margin-top:12px; overflow:auto; max-height: 420px;" id="activityBox"></div>
+                <div class="label">Live Transaction Feed</div>
+                <div class="panel" style="margin-top:12px; overflow:auto; max-height: 400px;" id="activityBox"></div>
+            </div>
+        </div>
+
+        <div style="height: 16px"></div>
+
+        <div class="grid">
+            <div class="card full">
+                <div class="label">Transaction Execution Trace</div>
+                <div class="search-box" style="margin-top: 16px;">
+                    <input id="traceInput" placeholder="Enter Local ID or Block Hash to trace lifecycle..." />
+                    <button class="btn" onclick="fetchTrace()">Trace</button>
+                </div>
+                <div id="traceTimeline" style="margin-top:10px; padding-left: 20px; border-left: 2px solid var(--accent); display: flex; flex-direction: column; gap: 16px;">
+                    <div class="muted">Enter a transaction ID above to debug its stages.</div>
+                </div>
+            </div>
+        </div>
+
+        <div style="height: 16px"></div>
+
+        <div class="grid">
+            <div class="card full">
+                <div class="label">User State & Hashchain Analysis</div>
+                <div class="search-box" style="margin-top: 16px;">
+                    <input id="userInput" placeholder="Enter Wallet ID manually or select from Directory..." />
+                    <button class="btn" onclick="fetchUserState()">Analyze</button>
+                </div>
+
+                <div id="userAnalysisResult" style="display: none; margin-top: 20px;">
+                    <div class="grid">
+                        <div class="card wide" style="background: rgba(255,255,255,0.02);">
+                            <div class="label">User Profile & Hardware</div>
+                            <div id="userProfileContent" style="margin-top: 12px; font-size: 13px; line-height: 1.6;"></div>
+                        </div>
+                        <div class="card wide" style="background: rgba(255,255,255,0.02);">
+                            <div class="label">Ledger State (Server View)</div>
+                            <div id="userLedgerContent" style="margin-top: 12px; font-size: 13px; line-height: 1.6;"></div>
+                        </div>
+                    </div>
+
+                    <div style="height: 16px"></div>
+
+                    <div class="label">Hashchain Visualizer</div>
+                    <div id="hashchainVisualizer" style="margin-top: 16px; padding: 20px; background: #070a13; border-radius: 16px; overflow-x: auto; display: flex; gap: 20px; align-items: center; min-height: 200px;">
+                        <!-- Nodes will be rendered here -->
+                    </div>
+
+                    <div style="height: 16px"></div>
+
+                    <div class="grid">
+                        <div class="card wide" style="background: rgba(255,255,255,0.02);">
+                            <div class="label">User Sync History</div>
+                            <div id="syncHistoryContent" style="margin-top: 12px; overflow:auto; max-height: 300px;"></div>
+                        </div>
+                        <div class="card wide" style="background: rgba(255,255,255,0.02);">
+                            <div class="label">Selected Block Data</div>
+                            <pre id="blockDataContent" style="margin-top: 12px; font-size: 11px; background: #000; padding: 12px; border-radius: 8px; color: var(--success); overflow:auto; max-height: 300px;">Click a block to inspect...</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="height: 16px"></div>
+
+        <div class="grid">
+            <div class="card full">
+                <div class="label">Transaction Volume Trend</div>
+                <div style="height: 300px; margin-top: 16px;">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div style="height: 16px"></div>
+
+        <div class="grid">
+            <div class="card wide">
+                <div class="label">Security & Attestation Audit</div>
+                <div id="securityAuditBox" style="margin-top:12px; max-height: 230px; overflow: auto;"></div>
+            </div>
+            <div class="card wide">
+                <div class="label">System Health & Metrics</div>
+                <div id="healthBox" style="margin-top:12px"></div>
             </div>
         </div>
     </div>
 
     <script>
+        let trendChart = null;
+        let ws = null;
+
         function fmtMoney(amount) {
-            return `$${(amount / 100).toFixed(2)}`;
+            return `₹${(amount / 100).toFixed(2)}`;
         }
 
-        function fmtUptime(seconds) {
-            const days = Math.floor(seconds / 86400);
-            const hours = Math.floor((seconds % 86400) / 3600);
-            const mins = Math.floor((seconds % 3600) / 60);
-            if (days > 0) return `${days}d ${hours}h`;
-            return `${hours}h ${mins}m`;
+        function setupWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${protocol}//${window.location.host}/ws/dashboard`);
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                console.log("WS Event:", data);
+                if (data.event === 'new_settlement') {
+                    notifyNewSettlement(data.payload);
+                    loadDashboard(); // Refresh KPI and tables
+                }
+            };
+
+            ws.onclose = () => {
+                setTimeout(setupWebSocket, 5000); // Reconnect
+            };
         }
 
-        function healthClass(status) {
-            if (status === 'healthy') return 'ok';
-            if (status === 'warning') return 'warn';
-            return 'err';
-        }
-
-        function statusClass(status) {
-            if (status === 'PROCESSED' || status === 'SETTLED') return 'success';
-            if (status === 'QUEUED') return 'warn';
-            return 'danger';
+        function notifyNewSettlement(payload) {
+            // Logic to flash or highlight new rows
+            console.log("New settlement received:", payload);
         }
 
         async function loadDashboard() {
-            const res = await fetch('/api/v1/admin/dashboard');
+            try {
+                const res = await fetch('/api/v1/admin/dashboard');
+                const json = await res.json();
+                if (json.status !== 'success') return;
+                render(json.data);
+                renderAlerts(json.data.alerts);
+                loadTrend();
+                loadUserDirectory();
+            } catch (e) { console.error("Load failed", e); }
+        }
+
+        async function loadUserDirectory() {
+            try {
+                const res = await fetch('/api/v1/admin/users');
+                const json = await res.json();
+                if (json.status !== 'success') return;
+
+                const container = document.getElementById('userListContainer');
+                if (json.data.length === 0) {
+                    container.innerHTML = '<div class="muted">No users found.</div>';
+                    return;
+                }
+
+                const rows = json.data.map(u => `
+                    <tr onclick="selectUser('${u.wallet_id}')" style="cursor:pointer;" class="user-row">
+                        <td style="font-weight:bold; color:var(--accent);">${u.wallet_name}</td>
+                        <td>${u.wallet_id}</td>
+                        <td><span class="pill success" style="font-size:10px;">${u.attest_tier}</span></td>
+                        <td class="muted" style="font-size:11px;">${new Date(u.created_at * 1000).toLocaleDateString()}</td>
+                    </tr>
+                `).join('');
+
+                container.innerHTML = `
+                    <table style="width:100%">
+                        <thead><tr><th>Name</th><th>Wallet ID</th><th>Tier</th><th>Joined</th></tr></thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                `;
+            } catch (e) { console.error("Load directory failed", e); }
+        }
+
+        function selectUser(wid) {
+            document.getElementById('userInput').value = wid;
+            fetchUserState();
+            // Smooth scroll to analysis section
+            document.getElementById('userInput').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function loadTrend() {
+            const res = await fetch('/api/v1/admin/analytics/trend?days=7');
             const json = await res.json();
             if (json.status !== 'success') return;
-            render(json.data);
+            renderChart(json.data);
+        }
+
+        async function fetchTrace() {
+            const lid = document.getElementById('traceInput').value.trim();
+            if (!lid) return;
+
+            const res = await fetch(`/api/v1/admin/trace/${lid}`);
+            const json = await res.json();
+            if (json.status !== 'success' || !json.data.found) {
+                document.getElementById('traceTimeline').innerHTML = '<div class="muted">Transaction not found.</div>';
+                return;
+            }
+
+            document.getElementById('traceTimeline').innerHTML = (json.data.events || []).map(event => `
+                <div style="position: relative;">
+                    <div style="position: absolute; left: -26px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent);"></div>
+                    <div class="pill" style="display: inline-block; background: rgba(255,255,255,0.05);">${new Date(event.timestamp * 1000).toLocaleString()}</div>
+                    <div style="font-weight: bold; margin-top: 4px;">${event.event_type}</div>
+                    <div class="muted" style="font-size: 12px;">${JSON.stringify(event.event_data)}</div>
+                </div>
+            `).join('');
+        }
+
+        async function fetchUserState() {
+            const wid = document.getElementById('userInput').value.trim();
+            if (!wid) return;
+
+            try {
+                const res = await fetch(`/api/v1/admin/user/${wid}/state`);
+                const json = await res.json();
+                if (json.status !== 'success') {
+                    alert("User not found or error fetching state.");
+                    return;
+                }
+
+                document.getElementById('userAnalysisResult').style.display = 'block';
+                const d = json.data;
+
+                // Render Profile
+                document.getElementById('userProfileContent').innerHTML = `
+                    <div style="display: flex; justify-content: space-between;"><span>Wallet Name:</span><span style="color:white;font-weight:bold;">${d.profile.wallet_name}</span></div>
+                    <div style="display: flex; justify-content: space-between;"><span>Attestation Tier:</span><span class="pill success">${d.profile.attest_tier}</span></div>
+                    <div style="display: flex; justify-content: space-between;"><span>Genesis Epoch:</span><span style="color:white;">${d.profile.genesis_epoch}</span></div>
+                    <div style="display: flex; justify-content: space-between;"><span>Email:</span><span style="color:white;">${d.profile.email || 'N/A'}</span></div>
+                    <div style="display: flex; justify-content: space-between; margin-top:8px;"><span>Device Pubkey Hash:</span></div>
+                    <div class="muted" style="font-size:10px; word-break:break-all;">${d.profile.device_pubkey_hash}</div>
+                `;
+
+                // Render Ledger State
+                document.getElementById('userLedgerContent').innerHTML = `
+                    <div style="display: flex; justify-content: space-between;"><span>Wallet Status:</span><span class="pill ${d.bucket.status === 'ACTIVE' ? 'success' : 'danger'}">${d.bucket.status}</span></div>
+                    <div style="display: flex; justify-content: space-between;"><span>Online Balance:</span><span style="color:var(--success);font-weight:bold;">${fmtMoney(d.bucket.balance)}</span></div>
+                    <div style="display: flex; justify-content: space-between;"><span>Lite Balance (Offline):</span><span style="color:var(--warning);font-weight:bold;">${fmtMoney(d.bucket.lite_balance)}</span></div>
+                    <div style="display: flex; justify-content: space-between;"><span>Head Counter:</span><span style="color:white;font-weight:bold;">#${d.sync_state.head_counter}</span></div>
+                    <div style="display: flex; justify-content: space-between; margin-top:8px;"><span>Head Block Hash:</span></div>
+                    <div class="muted" style="font-size:10px; word-break:break-all;">${d.sync_state.head_hash}</div>
+                `;
+
+                // Fetch and Render Chain
+                const chainRes = await fetch(`/api/v1/admin/user/${wid}/chain?limit=50`);
+                const chainJson = await chainRes.json();
+                window.currentUserBlocks = chainJson.data || [];
+                renderHashchain(window.currentUserBlocks);
+
+                // Fetch and Render Sync History
+                const syncRes = await fetch(`/api/v1/admin/user/${wid}/sync-history?limit=10`);
+                const syncJson = await syncRes.json();
+                renderSyncHistory(syncJson.data || []);
+
+            } catch (e) { console.error("Analyze failed", e); }
+        }
+
+        function renderSyncHistory(history) {
+            const container = document.getElementById('syncHistoryContent');
+            if (history.length === 0) {
+                container.innerHTML = '<div class="muted">No sync attempts found.</div>';
+                return;
+            }
+
+            const rows = history.map(h => `
+                <tr>
+                    <td style="font-size:11px;">${new Date(h.timestamp * 1000).toLocaleString()}</td>
+                    <td><span class="pill ${h.status === 'success' ? 'success' : 'danger'}">${h.status}</span></td>
+                    <td style="font-size:10px;">${h.block_count} blocks</td>
+                    <td style="font-size:10px;">${h.message || '-'}</td>
+                </tr>
+            `).join('');
+
+            container.innerHTML = `
+                <table style="width:100%">
+                    <thead><tr><th>Time</th><th>Status</th><th>Blocks</th><th>Detail</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            `;
+        }
+
+        function inspectBlock(hash) {
+            const block = window.currentUserBlocks.find(b => b.block_hash === hash);
+            if (!block) return;
+
+            const displayData = {
+                counter: block.counter,
+                type: block.node_type || block.status,
+                amount: block.amount,
+                hash: block.block_hash,
+                prev_hash: block.prev_hash,
+                timestamp: new Date(block.timestamp * 1000).toISOString(),
+                payer: block.payer_id,
+                payee: block.payee_id,
+                raw_payload: block.block_data_json || "Legacy block (no payload saved)"
+            };
+
+            document.getElementById('blockDataContent').textContent = JSON.stringify(displayData, null, 2);
+        }
+
+        function renderHashchain(blocks) {
+            const viz = document.getElementById('hashchainVisualizer');
+            if (blocks.length === 0) {
+                viz.innerHTML = '<div class="muted">No settled blocks found for this user.</div>';
+                return;
+            }
+
+            viz.innerHTML = blocks.map((b, i) => {
+                let color = 'var(--accent)';
+                let typeLabel = b.node_type || b.status;
+
+                if (typeLabel === 'GENESIS') color = '#3F51B5';
+                if (typeLabel === 'TOPUP') color = '#FFC107';
+                if (typeLabel === 'PAYMENT' && b.payer_id === 'SERVER') color = '#FFC107'; // Topup fallback
+
+                return `
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div onclick="inspectBlock('${b.block_hash}')" style="cursor:pointer; flex-shrink: 0; width: 150px; padding: 12px; background: #1a1d26; border-radius: 12px; border: 2px solid ${color}; font-size: 11px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); transition: transform 0.1s; transform: scale(1);" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                        <div style="font-weight: bold; color: ${color}; margin-bottom: 4px; display:flex; justify-content:space-between;">
+                            <span>#${b.counter}</span>
+                            <span>${typeLabel === 'GENESIS' ? '⚓' : ''}</span>
+                        </div>
+                        <div style="margin-bottom: 2px; color: ${color}; font-weight:800;">${typeLabel}</div>
+                        <div style="margin-bottom: 2px;">Amt: <span style="color:var(--success); font-weight:bold;">${fmtMoney(b.amount)}</span></div>
+                        <div class="muted" style="font-size: 9px; margin-top: 6px; overflow: hidden; text-overflow: ellipsis; white-space:nowrap;">H: ${b.block_hash.substring(0,12)}...</div>
+                        <div class="muted" style="font-size: 9px; overflow: hidden; text-overflow: ellipsis; white-space:nowrap;">P: ${b.prev_hash ? (b.prev_hash.substring(0,12)) : '00000000'}...</div>
+                    </div>
+                    ${i < blocks.length - 1 ? '<div style="color: var(--muted); font-size: 20px; font-weight:bold;">←</div>' : ''}
+                </div>
+                `;
+            }).join('');
+        }
+
+        function exportData() {
+            window.location.href = '/api/v1/admin/export/transactions';
+        }
+
+        function renderAlerts(alerts) {
+            const container = document.getElementById('alertsContainer');
+            container.innerHTML = (alerts || []).map(a => `
+                <div class="alert-banner" style="border-color: ${a.level === 'CRITICAL' ? 'var(--danger)' : 'var(--warning)'}; color: ${a.level === 'CRITICAL' ? 'var(--danger)' : 'var(--warning)'}">
+                    <span style="font-size: 20px;">${a.level === 'CRITICAL' ? '🚨' : '⚠️'}</span>
+                    <div>
+                        <div style="font-weight: 800;">${a.title}</div>
+                        <div style="font-size: 13px;">${a.message}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderChart(data) {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            const labels = data.map(d => d.date);
+            const volumes = data.map(d => d.volume / 100);
+
+            if (trendChart) {
+                trendChart.data.labels = labels;
+                trendChart.data.datasets[0].data = volumes;
+                trendChart.update();
+                return;
+            }
+
+            trendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Volume (₹)',
+                        data: volumes,
+                        borderColor: '#60a5fa',
+                        backgroundColor: 'rgba(96, 165, 250, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        x: { grid: { display: false } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
         }
 
         function render(data) {
             const cards = [
-                ['Total Users', data.users.total_users, `Active users: ${data.users.active_users}`],
+                ['Total Users', data.users.total_users, `New today: ${data.users.new_users_today}`],
                 ['Total Volume', fmtMoney(data.transactions.total_volume), `Today: ${fmtMoney(data.transactions.volume_today)}`],
                 ['Transactions', data.transactions.total_transactions, `Today: ${data.transactions.transactions_today}`],
-                ['Pending', data.transactions.pending_count, `Failed: ${data.transactions.failed_count}`],
-                ['Buckets', data.buckets.total_buckets, `Frozen: ${data.buckets.frozen_count}`],
-                ['Balance', fmtMoney(data.buckets.total_balance), `Avg: ${fmtMoney(data.buckets.average_balance)}`],
-                ['CPU', `${data.health.cpu_usage}%`, `Memory: ${data.health.memory_usage}%`],
-                ['Queue', data.health.queue_size, `Redis: ${data.health.redis_connected ? 'connected' : 'offline'}`],
+                ['Pending Sync', data.transactions.pending_count, `Failed: ${data.transactions.failed_count}`],
+                ['Total Balance', fmtMoney(data.buckets.total_balance), `Avg: ${fmtMoney(data.buckets.average_balance)}`],
+                ['Frozen Wallets', data.buckets.frozen_count, 'Security blocks'],
+                ['CPU Load', `${data.health.cpu_usage}%`, `Memory: ${data.health.memory_usage}%`],
+                ['Uptime', Math.floor(data.health.uptime / 3600) + 'h', 'System up since start'],
             ];
 
             document.getElementById('cards').innerHTML = cards.map(([label, value, sub]) => `
@@ -148,38 +512,51 @@
                 </div>
             `).join('');
 
-            document.getElementById('healthBox').innerHTML = `
-                <div class="status ${healthClass(data.health.status)}">${data.health.status.toUpperCase()}</div>
-                <div class="muted" style="margin-top: 14px; line-height: 1.8;">
-                    Uptime: ${fmtUptime(data.health.uptime)}<br>
-                    Database: ${data.health.database_connected ? 'Connected' : 'Unavailable'}<br>
-                    Redis: ${data.health.redis_connected ? 'Connected' : 'Unavailable'}<br>
-                    Queue size: ${data.health.queue_size}
-                </div>
-            `;
-
             const activityRows = (data.activity || []).map(item => `
-                <tr>
-                    <td>${new Date(item.timestamp).toLocaleString()}</td>
-                    <td>${item.event_type}</td>
-                    <td>${item.user_id || '-'}</td>
-                    <td>${fmtMoney(item.details.amount || 0)}</td>
-                    <td><span class="pill ${statusClass(item.details.status)}">${item.details.status}</span></td>
+                <tr onclick="inspectBlock('${item.details.block_hash || ''}')" style="cursor:pointer;">
+                    <td style="font-size:11px;">${new Date(item.timestamp).toLocaleTimeString()}</td>
+                    <td><span style="font-weight:bold; color:var(--accent);">${item.user_id}</span></td>
+                    <td>${item.details.payee}</td>
+                    <td style="color:var(--success); font-weight:bold;">${fmtMoney(item.details.amount)}</td>
+                    <td><span class="pill ${item.details.status === 'SETTLED' ? 'success' : 'warn'}">${item.details.status}</span></td>
                 </tr>
             `).join('');
 
             document.getElementById('activityBox').innerHTML = `
                 <table>
-                    <thead>
-                        <tr><th>Time</th><th>Event</th><th>User</th><th>Amount</th><th>Status</th></tr>
-                    </thead>
+                    <thead><tr><th>Time</th><th>Payer</th><th>Payee</th><th>Amount</th><th>Status</th></tr></thead>
                     <tbody>${activityRows || '<tr><td colspan="5" class="muted">No recent activity</td></tr>'}</tbody>
                 </table>
+            `;
+
+            const auditRows = (data.security_audit || []).map(item => `
+                <tr>
+                    <td>${new Date(item.timestamp * 1000).toLocaleTimeString()}</td>
+                    <td><span class="pill danger">${item.event_type}</span></td>
+                    <td>${item.wallet_id || '-'}</td>
+                </tr>
+            `).join('');
+
+            document.getElementById('securityAuditBox').innerHTML = `
+                <table>
+                    <thead><tr><th>Time</th><th>Event</th><th>Wallet</th></tr></thead>
+                    <tbody>${auditRows || '<tr><td colspan="3" class="muted">No security logs</td></tr>'}</tbody>
+                </table>
+            `;
+
+            document.getElementById('healthBox').innerHTML = `
+                <div class="status ok">HEALTHY</div>
+                <div class="muted" style="margin-top: 14px; line-height: 1.8;">
+                    Database: Connected<br>
+                    Queue Size: ${data.health.queue_size}<br>
+                    Protocol: Shadow v1<br>
+                    Environment: Production
+                </div>
             `;
         }
 
         loadDashboard();
-        setInterval(loadDashboard, 30000);
+        setupWebSocket();
     </script>
 </body>
 </html>

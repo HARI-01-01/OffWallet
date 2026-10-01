@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="24dp">
+
+    <TextView
+        android:id="@+id/tvQRTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Receive Payment"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:textColor="@color/black" />
+
+    <TextView
+        android:id="@+id/tvQRDetails"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Alice needs to scan this code"
+        android:textSize="14sp"
+        android:textColor="@color/gray_label" />
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="260dp"
+        android:layout_height="260dp"
+        android:layout_marginTop="24dp"
+        app:cardCornerRadius="24dp"
+        app:cardElevation="0dp"
+        app:strokeWidth="2dp"
+        app:strokeColor="@color/primary"
+        app:cardBackgroundColor="@color/white">
+
+        <ImageView
+            android:id="@+id/ivQRCode"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="16dp"
+            android:scaleType="fitCenter"
+            android:contentDescription="Wallet QR Code" />
+    </com.google.android.material.card.MaterialCardView>
+
+    <TextView
+        android:id="@+id/tvWalletId"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="user_abc123"
+        android:textSize="14sp"
+        android:textColor="@color/gray_500" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Verify QR Content:"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:textColor="@color/black" />
+
+    <ScrollView
+        android:id="@+id/svQRData"
+        android:layout_width="match_parent"
+        android:layout_height="120dp"
+        android:layout_marginTop="8dp"
+        android:background="#F5F5F5"
+        android:padding="8dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/tvQRRawData"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Decoding data..."
+            android:textSize="10sp"
+            android:fontFamily="monospace"
+            android:textColor="@color/black" />
+    </ScrollView>
+
+    <Button
+        android:id="@+id/btnCloseQR"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="Close"
+        style="@style/Widget.Material3.Button.TonalButton" />
+
+</LinearLayout>

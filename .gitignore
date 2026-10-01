@@ -7,6 +7,14 @@ build/
 *.apk
 *.aar
 *.class
+.artifacts/
+graphify-out/
+.gemini/
+*.db
+
+# Keys and Secrets
+*.key
+firebase-adminsdk.json
 
 # Python
 __pycache__/

@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Offline Wallet</string>
+    <string name="payment_status">Ready for offline payment</string>
+    <string name="payment_sending">Sending funds...</string>
+    <string name="payment_receiving">Receiving funds...</string>
+    <string name="payment_success">✅ Payment successful!</string>
+    <string name="payment_failed">❌ Payment failed</string>
+    <string name="google_client_id">860797510530-q37ispoalbsndplfloe955gufh2q2e7f.apps.googleusercontent.com</string>
+</resources>

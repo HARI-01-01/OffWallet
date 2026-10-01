@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shadow Premium Palette -->
+    <color name="canvas">#08090C</color>
+    <color name="surface_dark">#12141B</color>
+    <color name="raised">#1C1F29</color>
+    <color name="background">#0D0E12</color>
+
+    <!-- Brand Gradients -->
+    <color name="action_blue_start">#3E6BFF</color>
+    <color name="action_blue_end">#6D5BFF</color>
+
+    <!-- Card Rim Gradient Stops -->
+    <color name="rim_coral">#FF8A7A</color>
+    <color name="rim_pink">#F0A6C8</color>
+    <color name="rim_purple">#B9A8FF</color>
+    <color name="rim_blue">#4A7CFF</color>
+
+    <!-- Status Colors -->
+    <color name="verified_green">#4ADE9B</color>
+    <color name="pending_orange">#F2B34C</color>
+    <color name="outgoing_red">#FF6B6E</color>
+    <color name="success">#4ADE9B</color>
+    <color name="warning">#F2B34C</color>
+    <color name="error">#FF6B6E</color>
+
+    <!-- Neutral Palette -->
+    <color name="white">#FFFFFF</color>
+    <color name="soft_white">#FBFBFD</color>
+    <color name="black">#0A0B0F</color>
+    <color name="gray_text">#8B90A0</color>
+    <color name="gray_label">#6B7080</color>
+    <color name="gray_50">#F9FAFB</color>
+    <color name="gray_100">#F3F4F6</color>
+    <color name="gray_200">#E5E7EB</color>
+    <color name="gray_300">#D1D5DB</color>
+    <color name="gray_400">#9CA3AF</color>
+    <color name="gray_500">#6B7280</color>
+    <color name="gray_600">#4B5563</color>
+    <color name="gray_700">#374151</color>
+    <color name="gray_800">#1F2937</color>
+    <color name="gray_900">#111827</color>
+
+    <!-- Legacy Compatibility -->
+    <color name="primary">#08090C</color>
+    <color name="primary_dark">#000000</color>
+    <color name="primary_light">#12141B</color>
+    <color name="secondary">#3E6BFF</color>
+    <color name="background_dark">#08090C</color>
+    <color name="info">#3E6BFF</color>
+    <color name="accent">#1C1F29</color>
+
+    <color name="balance_card_start">#2563EB</color>
+    <color name="balance_card_end">#1E40AF</color>
+    <color name="primary_gradient_start">#1B263B</color>
+    <color name="primary_gradient_end">#0D1B2A</color>
+</resources>

@@ -27,7 +27,7 @@ class TestBucketManager:
         initial_balance = 5000
 
         # Sign bucket
-        bucket_data = f"{wallet_id}:{initial_balance}:0".encode()
+        bucket_data = f"{wallet_id}|{initial_balance}|0".encode()
         server_signature = Signer.sign_with_bytes(server_priv_bytes, bucket_data)
 
         manager = BucketManager(temp_db)
@@ -99,7 +99,7 @@ class TestBucketManager:
 
         # Add $20
         new_balance = 7000  # 5000 + 2000
-        bucket_data = f"{wallet_id}:{new_balance}:0".encode()
+        bucket_data = f"{wallet_id}|{new_balance}|{setup_bucket['manager'].get_counter(wallet_id, aes_key)}".encode()
         server_signature = Signer.sign_with_bytes(server_priv, bucket_data)
 
         success, balance, error = manager.add_funds(

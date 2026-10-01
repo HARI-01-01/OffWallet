@@ -9,6 +9,7 @@ from .firebase_db import FirebaseDB
 from .key_manager import KeyManager
 from .signer import Signer
 from .encryptor import Encryptor
+from .protocol import ShadowProtocol
 from .logging_utils import get_logger
 
 logger = get_logger("offlinepay.lite")
@@ -17,7 +18,7 @@ class LiteWalletManager:
     """Manage Lite Wallet (offline bucket) operations with Firebase."""
     
     LITE_EXPIRY_SECONDS = 604800  # 7 days
-    MAX_LITE_BALANCE = 5000000    # $50,000 in cents
+    MAX_LITE_BALANCE = 200000     # Strictly ₹2,000 (200,000 paisa) to match App
     
     def __init__(self, db: Optional[FirebaseDB] = None):
         self.db = db or FirebaseDB()
@@ -57,10 +58,12 @@ class LiteWalletManager:
         new_lite_counter = current_lite_counter + 1
         
         # 5. Create server signature for the lite bucket
-        expiry = int(time.time()) + self.LITE_EXPIRY_SECONDS
+        now = int(time.time())
+        expiry = now + self.LITE_EXPIRY_SECONDS
         # Standardized format: wallet_id|balance|counter|expiry
         bucket_data = f"{wallet_id}|{new_lite_balance}|{new_lite_counter}|{expiry}".encode()
-        server_signature = Signer.sign_with_bytes(server_private_key, bucket_data)
+        # Secure Tagged signing for production
+        server_signature = Signer.sign_with_bytes(server_private_key, bucket_data, ShadowProtocol.TAG_TOPUP)
         
         # 6. Encrypt lite balance and counter
         balance_data = str(new_lite_balance).encode()
@@ -76,7 +79,7 @@ class LiteWalletManager:
         new_main_balance = main_balance - amount
         main_update = {
             "balance": new_main_balance,
-            "updated_at": int(time.time())
+            "updated_at": now
         }
         
         if not self.db.update_bucket(wallet_id, main_update):
@@ -90,8 +93,8 @@ class LiteWalletManager:
             "lite_encrypted_counter": encrypted_counter_with_iv,
             "lite_server_signature": server_signature,
             "lite_expires_at": expiry,
-            "lite_last_synced": int(time.time()),
-            "updated_at": int(time.time())
+            "lite_last_synced": now,
+            "updated_at": now
         }
         
         if not self.db.update_lite_bucket(wallet_id, lite_update):
@@ -107,6 +110,7 @@ class LiteWalletManager:
             "lite_counter": new_lite_counter,
             "lite_server_signature": server_signature.hex(),
             "expires_at": expiry,
+            "issued_at": now,
             "encrypted_balance": encrypted_balance_with_iv.hex(),
             "encrypted_counter": encrypted_counter_with_iv.hex(),
         }
@@ -166,4 +170,4 @@ class LiteWalletManager:
         """Verify lite wallet server signature."""
         # Standardized format: wallet_id|balance|counter|expiry
         bucket_data = f"{wallet_id}|{lite_balance}|{lite_counter}|{expires_at}".encode()
-        return Signer.verify_with_bytes(server_public_key, bucket_data, server_signature)
+        return Signer.verify_with_bytes(ShadowProtocol.TAG_TOPUP, server_public_key, bucket_data, server_signature)

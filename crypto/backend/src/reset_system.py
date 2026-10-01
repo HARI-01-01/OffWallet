@@ -48,4 +48,9 @@ def reset_system():
     print("👉 Please clear your Android App storage before registering a new user.")
 
 if __name__ == "__main__":
+    # Strictly forbid reset in production environment
+    if os.getenv("ENV", "production").lower() == "production":
+        print("❌ ERROR: System reset utility is strictly forbidden in production environment.")
+        sys.exit(1)
+
     reset_system()

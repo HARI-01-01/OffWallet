@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "860797510530",
+    "project_id": "offlinewallet-aeda2",
+    "storage_bucket": "offlinewallet-aeda2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:860797510530:android:21e12c04f68ad51cd3659b",
+        "android_client_info": {
+          "package_name": "com.offlinewallet"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "860797510530-b387hiip10vormtb50kfd6jvqhh269lg.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.offlinewallet",
+            "certificate_hash": "a922a2d4874e834d04a3bbd42674c7c880889ef8"
+          }
+        },
+        {
+          "client_id": "860797510530-q37ispoalbsndplfloe955gufh2q2e7f.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAibYpCm6W6xDWcn4RPrCD_gBOrYbKI8A4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "860797510530-q37ispoalbsndplfloe955gufh2q2e7f.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

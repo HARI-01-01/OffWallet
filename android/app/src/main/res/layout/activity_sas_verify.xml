@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/canvas"
+    android:padding="32dp">
+
+    <ImageView
+        android:id="@+id/ivSecurityIcon"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_marginTop="48dp"
+        android:src="@android:drawable/ic_lock_lock"
+        app:tint="@color/action_blue_start"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <TextView
+        android:id="@+id/tvSasTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="Secure Pairing"
+        android:textColor="@color/white"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        app:layout_constraintTop_toBottomOf="@id/ivSecurityIcon"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <TextView
+        android:id="@+id/tvSasDesc"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="Verify these digits match the other phone exactly. This prevents attackers from intercepting your payment."
+        android:textColor="@color/gray_label"
+        android:textSize="14sp"
+        android:textAlignment="center"
+        app:layout_constraintTop_toBottomOf="@id/tvSasTitle" />
+
+    <TextView
+        android:id="@+id/tvSasDigits"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="48dp"
+        android:text="000 000"
+        android:textColor="@color/verified_green"
+        android:textSize="56sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.1"
+        app:layout_constraintTop_toBottomOf="@id/tvSasDesc"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <Button
+            android:id="@+id/btnConfirmSas"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="Digits Match"
+            android:backgroundTint="@color/action_blue_start"
+            android:textColor="@color/white"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnAbortSas"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Abort Payment"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:textColor="@color/outgoing_red" />
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

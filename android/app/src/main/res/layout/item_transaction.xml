@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:paddingHorizontal="14dp"
+    android:paddingVertical="13dp"
+    android:background="#12141B"
+    android:gravity="center_vertical">
+
+    <FrameLayout
+        android:id="@+id/txIconContainer"
+        android:layout_width="38dp"
+        android:layout_height="38dp"
+        android:background="@drawable/bg_pin_input"
+        android:backgroundTint="#1C1F29"
+        android:layout_marginEnd="12dp">
+
+        <ImageView
+            android:id="@+id/txIcon"
+            android:layout_width="15dp"
+            android:layout_height="15dp"
+            android:layout_gravity="center"
+            android:src="@android:drawable/ic_menu_send"
+            app:tint="@color/white"/>
+    </FrameLayout>
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/txTarget"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="To user_37c63e1e"
+            android:textColor="@color/white"
+            android:textSize="13.5sp"
+            android:textStyle="bold"
+            android:maxLines="1"
+            android:ellipsize="end"/>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="3dp">
+
+            <TextView
+                android:id="@+id/txDate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Aug 13, 19:49"
+                android:textColor="#666B7B"
+                android:textSize="11.5sp"/>
+
+            <View
+                android:layout_width="3dp"
+                android:layout_height="3dp"
+                android:background="@drawable/bg_button_round"
+                android:backgroundTint="#3A3E4B"
+                android:layout_marginHorizontal="7dp"/>
+
+            <TextView
+                android:id="@+id/txCounter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Block #6"
+                android:textColor="#5B79E8"
+                android:textStyle="bold"
+                android:textSize="11.5sp"/>
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="end">
+
+        <TextView
+            android:id="@+id/txAmount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="−₹20.00"
+            android:textColor="@color/white"
+            android:textSize="14.5sp"
+            android:textStyle="bold"
+            android:letterSpacing="-0.02"/>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="4dp">
+
+            <Button
+                android:id="@+id/btnCancelTx"
+                android:layout_width="wrap_content"
+                android:layout_height="24dp"
+                android:text="Cancel"
+                android:textSize="9sp"
+                android:textColor="@color/white"
+                android:backgroundTint="@color/black"
+                android:paddingHorizontal="8dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:visibility="gone"
+                style="@style/Widget.Material3.Button.TonalButton"/>
+
+            <Button
+                android:id="@+id/btnVerifyPin"
+                android:layout_width="wrap_content"
+                android:layout_height="24dp"
+                android:text="Verify"
+                android:textSize="9sp"
+                android:textColor="@color/white"
+                android:backgroundTint="@color/black"
+                android:paddingHorizontal="8dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:layout_marginStart="4dp"
+                android:visibility="gone"
+                style="@style/Widget.Material3.Button"/>
+        </LinearLayout>
+    </LinearLayout>
+
+</LinearLayout>

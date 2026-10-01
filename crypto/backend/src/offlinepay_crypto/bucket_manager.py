@@ -127,10 +127,24 @@ class BucketManager:
         
         new_balance = bucket['balance'] - amount
         new_counter = bucket['counter'] + 1
-        
+
+        balance_data = str(new_balance).encode()
+        counter_data = str(new_counter).encode()
+        encrypted_balance, iv_balance, tag_balance = Encryptor.encrypt(
+            aes_key, balance_data
+        )
+        encrypted_counter, iv_counter, tag_counter = Encryptor.encrypt(
+            aes_key, counter_data
+        )
+
+        encrypted_balance_with_iv = iv_balance + tag_balance + encrypted_balance
+        encrypted_counter_with_iv = iv_counter + tag_counter + encrypted_counter
+
         update_data = {
             "balance": new_balance,
             "counter": new_counter,
+            "encrypted_balance": encrypted_balance_with_iv,
+            "encrypted_counter": encrypted_counter_with_iv,
             "last_synced": int(time.time()),
             "updated_at": int(time.time())
         }
@@ -191,6 +205,13 @@ class BucketManager:
         """Get current counter."""
         bucket = self.get_bucket(wallet_id, aes_key)
         return bucket['counter'] if bucket else None
+
+    def is_expired(self, wallet_id: str) -> bool:
+        """Check if a bucket is expired."""
+        bucket = self.db.get_bucket(wallet_id)
+        if not bucket:
+            return True
+        return bucket.get('expires_at', 0) < int(time.time())
 
     def freeze_bucket(self, wallet_id: str) -> bool:
         """Freeze bucket (fraud prevention)."""

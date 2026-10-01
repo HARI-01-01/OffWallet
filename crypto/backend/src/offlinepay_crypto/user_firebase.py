@@ -14,6 +14,7 @@ from .bucket_manager import BucketManager
 from .key_manager import KeyManager
 from .signer import Signer
 from .encryptor import Encryptor
+from .protocol import ShadowProtocol
 from .logging_utils import get_logger
 
 logger = get_logger("offlinepay.user")
@@ -72,7 +73,7 @@ class UserManagerFirebase:
             # 3. Create wallet with server signature
             # ✅ Standardized format: wallet_id|balance|counter
             bucket_data = f"{wallet_id}|{initial_balance}|0".encode()
-            server_signature = Signer.sign_with_bytes(server_private_key_bytes, bucket_data)
+            server_signature = Signer.sign_with_bytes(server_private_key_bytes, bucket_data, "")
             
             # 4. Generate wallet keys
             aes_key = Encryptor.generate_key()

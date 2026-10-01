@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@drawable/dialog_background">
+
+    <TextView
+        android:id="@+id/tvSyncStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Synchronizing Ledger"
+        android:textColor="@color/white"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:gravity="center"/>
+
+    <TextView
+        android:id="@+id/tvSyncDetail"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Starting connection..."
+        android:textColor="@color/gray_label"
+        android:textSize="14sp"
+        android:gravity="center"/>
+
+    <ProgressBar
+        android:id="@+id/progressSync"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:indeterminate="true"
+        android:indeterminateTint="@color/primary"/>
+
+    <Button
+        android:id="@+id/btnSyncClose"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:text="Close"
+        android:visibility="gone"
+        style="@style/Widget.App.Button"/>
+
+</LinearLayout>

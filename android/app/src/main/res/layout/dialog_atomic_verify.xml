@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Connection Strength"
+        android:textSize="12sp"
+        android:textColor="@color/gray_500"
+        android:layout_gravity="center"
+        android:layout_marginBottom="8dp" />
+
+    <com.offlinewallet.ui.views.ProximityView
+        android:id="@+id/proximityView"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:layout_gravity="center"
+        android:layout_marginBottom="24dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="My OTP (Show this)"
+        android:textSize="12sp"
+        android:textColor="@color/gray_500" />
+
+    <TextView
+        android:id="@+id/tvDialogMyOtp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="000000"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        android:textColor="@color/black"
+        android:letterSpacing="0.2" />
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:hint="Enter Peer's OTP"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etDialogPeerOtp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:maxLength="6" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+</LinearLayout>

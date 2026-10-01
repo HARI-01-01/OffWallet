@@ -16,11 +16,22 @@ from .logging_utils import get_logger
 
 logger = get_logger("offlinepay.auth")
 
+import jwt
+
+# ... (rest of imports)
+
 class AuthManager:
+    # ... (rest of methods)
+
+    def generate_device_token(self, payload: Dict[str, Any]) -> str:
+        """Generate a long-lived JWT for an active device."""
+        secret = os.getenv("DEVICE_JWT_SECRET", "shadow-v1-fallback-secret-long-enough-32bytes")
+        return jwt.encode(payload, secret, algorithm="HS256")
     """Manage authentication with Firebase and development fallback."""
     
     def __init__(self):
-        self._dev_mode = os.getenv("ENV", "development") == "development"
+        # Strictly gate dev mode to 'development' environment string
+        self._dev_mode = os.getenv("ENV", "production").lower() == "development"
         
     def _is_firebase_initialized(self) -> bool:
         """Check if Firebase is initialized dynamically."""
@@ -29,11 +40,8 @@ class AuthManager:
     async def verify_token(self, token: str) -> Dict[str, Any]:
         """
         Verify Firebase token or use development fallback.
-        
-        In development mode, accepts a special development token.
-        In production, strictly validates Firebase tokens.
         """
-        # Development fallback for dev_ tokens
+        # 1. Development fallback for dev_ tokens
         if self._dev_mode and token.startswith("dev_"):
             wallet_id = token.replace("dev_", "")
             return {
@@ -46,8 +54,8 @@ class AuthManager:
                 "dev_mode": True
             }
         
-        # Development fallback for mock_ tokens (Android testing)
-        if token.startswith("mock_token_"):
+        # 2. Development fallback for mock_ tokens (Android testing)
+        if self._dev_mode and token.startswith("mock_token_"):
             wallet_id = token.replace("mock_token_", "")
             return {
                 "uid": wallet_id,
@@ -58,8 +66,20 @@ class AuthManager:
                 "phone_verified": True,
                 "dev_mode": True
             }
-        
-        # Production: Validate Firebase token
+
+        # 3. Check for Device JWT (Shadow Protocol Long-lived Token)
+        # These are HS256 signed with our internal secret
+        try:
+            secret = os.getenv("DEVICE_JWT_SECRET", "shadow-v1-fallback-secret-long-enough-32bytes")
+            decoded = jwt.decode(token, secret, algorithms=["HS256"])
+            # If successfully decoded, it's a valid device token
+            decoded["dev_mode"] = False # Treat as production-grade auth
+            return decoded
+        except (jwt.InvalidTokenError, jwt.DecodeError):
+            # Not our device token, proceed to Firebase check
+            pass
+
+        # 4. Production: Validate Firebase token
         if not self._is_firebase_initialized():
             # If Firebase is not initialized but we're in dev mode, fall back to dev mode
             if self._dev_mode:
@@ -106,9 +126,27 @@ class AuthManager:
 # Create global auth manager instance
 auth_manager = AuthManager()
 
-async def get_current_user(firebase_token: str = Header(...)) -> Dict[str, Any]:
+async def get_current_user(firebase_token: Optional[str] = Header(None)) -> Dict[str, Any]:
     """Get current authenticated user."""
-    return await auth_manager.verify_token(firebase_token)
+    if not firebase_token:
+        # Check if we are in a dashboard/admin context and in dev mode
+        if os.getenv("ENV", "production").lower() == "development":
+            logger.warning("No token provided, using admin fallback for development")
+            return {
+                "uid": "admin",
+                "wallet_id": "admin",
+                "email": "admin@dev.local",
+                "dev_mode": True
+            }
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing firebase-token header"
+        )
+
+    logger.info(f"Authenticating user with token: {firebase_token[:15]}...")
+    user = await auth_manager.verify_token(firebase_token)
+    logger.info(f"User authenticated: {user.get('wallet_id') or user.get('uid')}")
+    return user
 
 async def get_current_user_optional(
     authorization: Optional[str] = Header(None)

@@ -30,7 +30,7 @@ class RateLimiter:
             self._redis = False
             return None
 
-    def check_rate_limit(self, key: str, limit: int = 100, window: int = 60) -> Tuple[bool, int]:
+    def check_rate_limit(self, key: str, limit: int = 100, window: int = 60, fail_closed: bool = False) -> Tuple[bool, int]:
         current = int(time.time())
         window_key = f"ratelimit:{key}:{current // window}"
 
@@ -41,6 +41,10 @@ class RateLimiter:
             if count > limit:
                 return False, 0
             return True, limit - count
+
+        # If Redis is unavailable and fail_closed is True, reject the request.
+        if fail_closed:
+            return False, 0
 
         window_start, count = self._local_counts.get(window_key, (current, 0))
         if current - window_start >= window:

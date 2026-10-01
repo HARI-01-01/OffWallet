@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@color/surface_dark"
+    android:padding="24dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="🛡️ Hardware Security Scan"
+        android:textColor="@color/white"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="24dp"/>
+
+    <!-- Step 1 -->
+    <LinearLayout
+        android:id="@+id/stepBinary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="16dp">
+        <ProgressBar
+            android:id="@+id/pbBinary"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginEnd="12dp"
+            android:indeterminateTint="@color/action_blue_start"/>
+        <ImageView
+            android:id="@+id/ivBinary"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@android:drawable/ic_input_add"
+            app:tint="@color/verified_green"
+            android:visibility="gone"
+            android:layout_marginEnd="12dp"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Verifying APK Integrity..."
+            android:textColor="@color/gray_text"
+            android:textSize="14sp"/>
+    </LinearLayout>
+
+    <!-- Step 2 -->
+    <LinearLayout
+        android:id="@+id/stepHeadNode"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="16dp"
+        android:alpha="0.5">
+        <ProgressBar
+            android:id="@+id/pbHeadNode"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginEnd="12dp"
+            android:visibility="invisible"
+            android:indeterminateTint="@color/action_blue_start"/>
+        <ImageView
+            android:id="@+id/ivHeadNode"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@android:drawable/ic_input_add"
+            app:tint="@color/verified_green"
+            android:visibility="gone"
+            android:layout_marginEnd="12dp"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Validating Secure Root node..."
+            android:textColor="@color/gray_text"
+            android:textSize="14sp"/>
+    </LinearLayout>
+
+    <!-- Step 3 -->
+    <LinearLayout
+        android:id="@+id/stepChain"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:alpha="0.5">
+        <ProgressBar
+            android:id="@+id/pbChain"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginEnd="12dp"
+            android:visibility="invisible"
+            android:indeterminateTint="@color/action_blue_start"/>
+        <ImageView
+            android:id="@+id/ivChain"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@android:drawable/ic_input_add"
+            app:tint="@color/verified_green"
+            android:visibility="gone"
+            android:layout_marginEnd="12dp"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Backtracking Hash Chain audit..."
+            android:textColor="@color/gray_text"
+            android:textSize="14sp"/>
+    </LinearLayout>
+
+</LinearLayout>

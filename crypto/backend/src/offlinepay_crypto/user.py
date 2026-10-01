@@ -43,7 +43,7 @@ class UserManager:
             server_private_key = KeyManager.private_key_to_bytes(server_priv)
             server_public_key = KeyManager.public_key_to_bytes(server_pub)
 
-        bucket_data = f"{wallet_id}:{initial_balance}:0".encode()
+        bucket_data = f"{wallet_id}|{initial_balance}|0".encode()
         server_signature = Signer.sign_with_bytes(server_private_key, bucket_data)
         password_hash = hashlib.sha256(password.encode()).hexdigest()
 
@@ -129,7 +129,7 @@ class UserManager:
         new_balance = current_balance + amount
 
         counter = bucket.get('counter', 0)
-        bucket_data = f"{wallet_id}:{new_balance}:{counter}".encode()
+        bucket_data = f"{wallet_id}|{new_balance}|{counter}".encode()
         server_signature = Signer.sign_with_bytes(server_private_key, bucket_data)
 
         success, new_balance, error = self.wallet.bucket.add_funds(

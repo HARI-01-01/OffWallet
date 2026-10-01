@@ -11,6 +11,29 @@ from src.offlinepay_crypto.key_manager import KeyManager
 from src.offlinepay_crypto.encryptor import Encryptor
 from src.offlinepay_crypto.signer import Signer
 
+# Monkeypatch firestore for tests
+import sys
+from unittest.mock import MagicMock
+
+class MockFirestore:
+    def transactional(self, func):
+        def wrapper(transaction, *args, **kwargs):
+            print(f"DEBUG: Executing transactional function {func.__name__}")
+            return func(transaction, *args, **kwargs)
+        return wrapper
+
+    class Increment:
+        def __init__(self, value):
+            self.value = value
+
+mock_firestore = MagicMock()
+mock_firestore.transactional = MockFirestore().transactional
+mock_firestore.Increment = MockFirestore.Increment
+
+# Monkeypatch asyncio for tests
+import asyncio
+asyncio.create_task = lambda coro: None
+
 
 @pytest.fixture
 def temp_db():

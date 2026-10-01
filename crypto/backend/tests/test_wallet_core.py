@@ -23,7 +23,7 @@ class TestWalletCore:
         wallet_id = "alice_123"
         initial_balance = 5000
 
-        bucket_data = f"{wallet_id}:{initial_balance}:0".encode()
+        bucket_data = f"{wallet_id}|{initial_balance}|0".encode()
         server_signature = Signer.sign_with_bytes(server_priv_bytes, bucket_data)
 
         success, priv_key, pub_key, aes_key, error = wallet.create_wallet(
